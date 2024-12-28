@@ -87,12 +87,12 @@ def process_articles(data, parent_folder="data6", language='el'):
         if url and folder:
             fetch_article_content(url, folder, parent_folder=parent_folder, language=language)
 
-if __name__ == "__main__":
-    # Path to the CSV file
-    csv_file_path = "text_categorization.csv"
+# if __name__ == "__main__":
+#     # Path to the CSV file
+#     csv_file_path = "text_categorization.csv"
 
-    # Step 1: Read CSV into an object
-    csv_data = read_csv_to_object(csv_file_path)
+#     # Step 1: Read CSV into an object
+#     csv_data = read_csv_to_object(csv_file_path)
 
-    # Step 2: Process articles
-    process_articles(csv_data,parent_folder="data2")
+#     # Step 2: Process articles
+#     process_articles(csv_data,parent_folder="data2")
