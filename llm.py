@@ -1,18 +1,19 @@
+import os
+from pathlib import Path
 from ollama import chat
 from ollama import ChatResponse
-import ollama
 
-import os
 import pandas as pd
 import asyncio
 from ollama import AsyncClient
 from ollama import Client, ChatResponse
+import yaml
+
 from article_data_processing import create_dataframe
-from tools import replace_slash_with_underscore
 
 
 
-async def query_ollama_and_update_async(df: pd.DataFrame, output_file: str, model: str = 'ymertzanis/meltemi7b', save_interval: int = 50):
+async def query_ollama_and_update_async(df: pd.DataFrame, output_file: str, model: str, save_interval: int = 50):
     """
     Queries Ollama asynchronously for each article in the dataframe and updates it with the response.
 
@@ -56,7 +57,7 @@ async def query_ollama_and_update_async(df: pd.DataFrame, output_file: str, mode
 
 
 
-def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str = 'llama3.2', prompt_template: str = "Here is an article:\n\n{article}\n\nProvide a summary of this article.", save_interval: int = 50):
+def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prompt_template: str = "Prompt", save_interval: int = 50):
     """
     Queries Ollama synchronously for each article in the dataframe and updates it with the response.
 
@@ -145,95 +146,95 @@ def query_ollama_and_update_with_custom_client(
     df.to_csv(output_file, index=False)
     print("Final dataframe saved.")
 
-# def query_ollama_and_update(df: pd.DataFrame,  prompt: str, output_file: str, model: str = 'llama3.2', save_interval: int = 50):
-#     """
-#     Queries Ollama synchronously for each article in the dataframe and updates it with the response.
+def save_string_to_folder(folder_name: str, file_name: str, file_content: str):
+    """
+    Creates a folder and saves a string in a text file inside the folder.
 
-#     Args:
-#         df (pd.DataFrame): The dataframe with 'title', 'article', and 'category'.
-#         output_file (str): The file path to save the updated dataframe as a CSV.
-#         model (str): The Ollama model to use for querying.
-#         prompt_template (str): The template for the prompt, where {article} is replaced with the article text.
-#         save_interval (int): The number of API calls after which to save the dataframe.
-#     """
-#     # Define the model-specific response column
-#     response_column = model
+    Args:
+        folder_name (str): The name of the folder to be created.
+        file_name (str): The name of the text file to be created inside the folder.
+        file_content (str): The content to be written into the text file.
 
-#     if response_column not in df.columns:
-#         df[response_column] = None
+    Raises:
+        OSError: If the folder or file cannot be created due to an operating system error.
+    """
+    try:
+        # Create the folder if it doesn't exist
+        os.makedirs(folder_name, exist_ok=True)
 
-#     # Iterate over rows in the dataframe
-#     for idx, row in df.iterrows():
-#         if pd.isna(row[response_column]):  # Skip rows already processed
-#             print(row['title'])
-#             # Format the prompt using the provided template
-#             prompt = f"{prompt}/n{row['article']}"
-#             message = {'role': 'user', 'content': prompt}
+        # Define the full path for the file
+        file_path = os.path.join(folder_name, file_name)
+        file_path = Path(file_path)
+        if not file_path.exists():
+            # Write the content to the file
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.write(file_content)
 
-#             try:
-#                 # Query Ollama
-#                 response: ChatResponse = chat(model=model, messages=[message])
-#                 df.at[idx, response_column] = response.message.content  # Update the dataframe with the response
-#             except Exception as e:
-#                 print(f"Error processing row {idx}: {e}")
-#                 continue
+            print(f"File '{file_name}' successfully created in folder '{folder_name}'.")
+    except OSError as e:
+        print(f"Error creating folder or file: {e}")
+        raise
 
-#             # Save the dataframe every `save_interval` calls
-#             if idx % save_interval == 0 and idx > 0:
-#                 df.to_csv(output_file, index=False)
-#                 print(f"Saved progress at row {idx}.")
 
-#     # Final save after completing all rows
-#     df.to_csv(output_file, index=False)
-#     print("Final dataframe saved.")
+def replace_slash_dots_with_underscore(string_with_slash):
+    clean_string = string_with_slash.replace('/','_')
+    clean_string = string_with_slash.replace('.','_')
 
-# def query_ollama_and_update(df: pd.DataFrame,prompt, output_file: str, model: str = 'llama3.2', save_interval: int = 50):
-#     """
-#     Queries Ollama synchronously for each article in the dataframe and updates it with the response.
+    return clean_string
 
-#     Args:
-#         df (pd.DataFrame): The dataframe with 'title', 'article', and 'category'.
-#         output_file (str): The file path to save the updated dataframe as a CSV.
-#         model (str): The Ollama model to use for querying.
-#         save_interval (int): The number of API calls after which to save the dataframe.
-#     """
-#     # Define the response column
-#     if model not in df.columns:
-#         df[model] = None
+def run_prompt_from_yaml(yaml_file: str, dataframe: pd.DataFrame, save_interval: int = 50):
+    """
+    Reads a YAML file containing prompts and models, and runs each prompt for every model.
 
-#     # Iterate over rows in the dataframe
-#     for idx, row in df.iterrows():
-#         if pd.isna(row['response']):  # Skip rows already processed
-#             article = row['article']
-#             print(article)
-#             prompt = f"{prompt}/n{article}"
-#             message = {'role': 'user', 'content': prompt}
+    Args:
+        yaml_file (str): Path to the YAML file containing prompts and models.
+        dataframe (pd.DataFrame): The dataframe with the data
+        save_interval (int): The number of API calls after which to save the dataframe.
+    """
+    # Load the YAML file
+    with open(yaml_file, 'r', encoding='utf-8') as file:
+        config = yaml.safe_load(file)
 
-#             try:
-#                 # Query Ollama
-#                 response: ChatResponse = chat(model=model, messages=[message])
-#                 df.at[idx, model] = response.message.content  # Update the dataframe with the response
-#             except Exception as e:
-#                 print(f"Error processing row {idx}: {e}")
-#                 continue
+    prompts = config.get('prompts', {})
+    models = config.get('models', {})
 
-#             # Save the dataframe every `save_interval` calls
-#             if idx % save_interval == 0 and idx > 0:
-#                 df.to_csv(output_file, index=True)
-#                 print(f"Saved progress at row {idx}.")
+    # Iterate over each model
+    for model_name, model in models.items():
+        print(f"Processing model: {model_name} ({model})")
 
-#     # Final save after completing all rows
-#     df.to_csv(output_file, index=True)
-#     print("Final dataframe saved.")
+        # Prepare a DataFrame for prompts
+        for prompt_name, prompt in prompts.items():
+            print(prompt_name)
+            save_string_to_folder("results/"+prompt_name, prompt_name + ".txt",prompt)
+            output_file = f"results/{prompt_name}/output_{replace_slash_dots_with_underscore(model)}.csv"
+            # Call the query function
+            query_ollama_and_update(
+                df=dataframe,
+                output_file=output_file,
+                model=model,
+                prompt_template=prompt,
+                save_interval=save_interval
+            )
 
+
+def run_prompt_from_yaml1(yaml_file):
+
+
+    save_string_to_folder("results/"+prompt_name, prompt_name + ".txt",prompt)
+    output_file = f"results/{prompt_name}/output_{replace_slash_dots_with_underscore(model)}.csv"
+    
 
 number = 3
 
 # Path to your data folder
 data_folder = "data2"
-model = "ilsp/meltemi-instruct"
-output_file = f"results/output_{replace_slash_with_underscore(model)}_{number}.csv"
+model = "gemma2"
+
 prompt = "Παρακαλώ πες μου τι είδους άρθρο είναι αυτο που γραφω κατω, από τις επιλογες Αρθρο, Επιστολή, Κριτική, Συνέντευξη, Συνταγή, Άλλο. Απάντησε μόνο με μία λεξη, από τα είδη που ανεφερα."
+prompt_name = "simple_prompt_2"
+save_string_to_folder("results/"+prompt_name, prompt_name + ".txt",prompt)
+output_file = f"results/{prompt_name}/output_{replace_slash_dots_with_underscore(model)}.csv"
+
 # Create the dataframe
 dataframe = create_dataframe(data_folder)
 print("okay")
@@ -243,6 +244,7 @@ print("Let's start!!")
 # custom_host = "http://localhost:11434"  
 header = {"Content-Type": "application/json"}
 # Run the async function
-print(dataframe.tail(20))
-query_ollama_and_update(dataframe.head(20), output_file,model= model,prompt_template = prompt,save_interval=5)
+# print(dataframe.tail(20))
+run_prompt_from_yaml("prompt_settings.yaml",dataframe)
+# query_ollama_and_update(dataframe, output_file,model= model,prompt_template = prompt,save_interval=10)
 print("Finished.")
