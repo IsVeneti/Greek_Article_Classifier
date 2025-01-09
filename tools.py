@@ -43,9 +43,7 @@ def get_filename_from_path(filepath):
 def add_prefix_filename_from_path(filepath,filename_prefix):
     path, filename = os.path.split(filepath)
     print(filename)
-    # filename = os.path.splitext(filename)[0]
-    new_filename = f'{filename_prefix}_{filename}'
+    new_filename = f'{filename_prefix}{filename}'
     newpath = os.path.join(path, new_filename)
     return newpath
 
-print(add_prefix_filename_from_path("C:/docojs/baby.csv","prefixbitch"))
