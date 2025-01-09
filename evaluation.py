@@ -1,5 +1,6 @@
 import csv
 from difflib import SequenceMatcher
+import os
 import unicodedata as ud
 import re
 
@@ -88,7 +89,32 @@ def process_csv(file_path):
     return true_percentage
 
 
-print("precentage: ",process_csv('results/simple_prompt_1/output_llama3_1.csv'))
+def process_folder(folder_path):
+    """
+    Processes all CSV files in a folder using the process_csv function.
+    Ignores non-CSV files.
+
+    Args:
+        folder_path (str): The path to the folder containing CSV files.
+
+    Returns:
+        dict: A dictionary with filenames as keys and their True percentage as values.
+    """
+    results = {}
+
+    for file_name in os.listdir(folder_path):
+        if file_name.endswith(".csv"):
+            file_path = os.path.join(folder_path, file_name)
+            true_percentage = process_csv(file_path)
+            print(f'{file_name}: {true_percentage}')
+            results[file_name] = true_percentage
+
+    return results
+
+# print("precentage: ",process_csv('results/simple_prompt_1/output_llama3_1.csv'))
+process_folder('results/simple_prompt_1')
+
+
 
 # Example usage
 # file_path = "path_to_your_file.csv"
