@@ -53,7 +53,7 @@ def process_csv(file_path):
     output_rows = []
 
     with open(file_path, "r", encoding="utf-8") as file:
-        reader = csv.reader(file)
+        reader = csv.reader(file,delimiter='|')
         headers = next(reader)  # Skip header if it exists
         headers.extend(["Similarity", "Similarity Percentage"])
 
@@ -111,8 +111,32 @@ def process_folder(folder_path):
 
     return results
 
+def process_folder_recursive(folder_path):
+    """
+    Recursively processes all CSV files in a folder and its subfolders
+    using the process_csv function. Ignores non-CSV files.
+
+    Args:
+        folder_path (str): The path to the folder containing CSV files.
+
+    Returns:
+        dict: A dictionary with filenames as keys (including relative paths)
+              and their True percentage as values.
+    """
+    results = {}
+
+    for root, _, files in os.walk(folder_path):
+        for file_name in files:
+            if file_name.endswith(".csv"):
+                file_path = os.path.join(root, file_name)
+                true_percentage = process_csv(file_path)
+                relative_path = os.path.relpath(file_path, folder_path)
+                print(f'{relative_path}: {true_percentage}')
+                results[relative_path] = true_percentage
+
+
 # print("precentage: ",process_csv('results/simple_prompt_1/output_llama3_1.csv'))
-process_folder('results/simple_prompt_1')
+process_folder_recursive('attempt_2/')
 
 
 
