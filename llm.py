@@ -12,51 +12,6 @@ import yaml
 from article_data_processing import create_dataframe
 
 
-
-async def query_ollama_and_update_async(df: pd.DataFrame, output_file: str, model: str, save_interval: int = 50):
-    """
-    Queries Ollama asynchronously for each article in the dataframe and updates it with the response.
-
-    Args:
-        df (pd.DataFrame): The dataframe with 'title', 'article', and 'category'.
-        output_file (str): The file path to save the updated dataframe as a CSV.
-        model (str): The Ollama model to use for querying.
-        save_interval (int): The number of API calls after which to save the dataframe.
-    """
-    client = AsyncClient()
-    tasks = []
-    
-    # Define the response column
-    if 'response' not in df.columns:
-        df['response'] = None
-
-    # Create async tasks for querying Ollama
-    async def process_row(idx, article):
-        print(article)
-        prompt = f"Θελω να μου πείς αν αυτός ο αριθμός είναι ζυγός ή μονος. Απάντα μόνο με τη λέξη ζυγός/μονός. Αριθμος: {article}"
-        message = {'role': 'user', 'content': prompt}
-        response = await client.chat(model=model, messages=[message])
-        print(response['message']['content'])
-        df.at[idx, 'response'] = response['message']['content']  # Update the dataframe with the response
-
-    for idx, row in df.iterrows():
-        if pd.isna(row['response']):  # Skip rows already processed
-            tasks.append(process_row(idx, row['article']))
-
-        # Process tasks in chunks and save intermittently
-        if len(tasks) >= save_interval:
-            await asyncio.gather(*tasks)
-            df.to_csv(output_file, index=True)  # Save dataframe
-            tasks = []  # Reset tasks
-
-    # Process any remaining tasks
-    if tasks:
-        await asyncio.gather(*tasks)
-        df.to_csv(output_file, index=True)  # Final save
-
-
-
-
 def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prompt_template: str = "Prompt", save_interval: int = 50):
     """
     Queries Ollama synchronously for each article in the dataframe and updates it with the response.
@@ -79,17 +34,18 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
     for idx in range(len(df)):
         if pd.isna(df.loc[idx, response_column]):  # Skip rows already processed
             # Format the prompt using the provided template
-            prompt = prompt_template.format(article=df.loc[idx, 'article'])
+            prompt = f"{prompt_template}\n{df.loc[idx, 'article']}"
             message = {'role': 'user', 'content': prompt}
+            print(message)
 
-            try:
-                # Query Ollama
-                response: ChatResponse = chat(model=model, messages=[message])
-                print(f"Response: {response}")
-                df.loc[idx, response_column] = response.message.content  # Update the dataframe with the response
-            except Exception as e:
-                print(f"Error processing row {idx}: {e}")
-                continue
+            # try:
+            #     # Query Ollama
+            #     response: ChatResponse = chat(model=model, messages=[message])
+            #     print(f"Response: {response}")
+            #     df.loc[idx, response_column] = response.message.content  # Update the dataframe with the response
+            # except Exception as e:
+            #     print(f"Error processing row {idx}: {e}")
+            #     continue
 
             # Save the dataframe every `save_interval` calls
             if idx % save_interval == 0 and idx > 0:
@@ -97,54 +53,9 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
                 print(f"Saved progress at row {idx}.")
 
     # Final save after completing all rows
-    df.to_csv(output_file, index=False)
+    df.to_csv(output_file, index=False,sep='|')
     print("Final dataframe saved.")
 
-def query_ollama_and_update_with_custom_client(
-    df: pd.DataFrame, output_file: str, host: str, headers: dict, model: str = 'llama3.2', save_interval: int = 50
-):
-    """
-    Queries Ollama synchronously for each article in the dataframe using a custom client and updates it with the response.
-
-    Args:
-        df (pd.DataFrame): The dataframe with 'title', 'article', and 'category'.
-        output_file (str): The file path to save the updated dataframe as a CSV.
-        host (str): The host address for the custom Ollama client.
-        headers (dict): Headers for the custom Ollama client.
-        model (str): The Ollama model to use for querying.
-        save_interval (int): The number of API calls after which to save the dataframe.
-    """
-    client = Client(host=host, headers=headers)
-
-    # Define the response column
-    if 'response' not in df.columns:
-        df['response'] = None
-
-    # Iterate over rows in the dataframe
-    for idx, row in df.iterrows():
-        if pd.isna(row['response']):  # Skip rows already processed
-            article = row['article']
-            print(article)
-            prompt = f"Θελω να μου πείς αν αυτός ο αριθμός είναι ζυγός ή μονος. Απάντα μόνο με τη λέξη ζυγός ή μονός. Αριθμος: {article}"
-            message = {'role': 'user', 'content': prompt}
-
-            try:
-                # Query Ollama with the custom client
-                response: ChatResponse = client.chat(model=model, messages=[message])
-                df.at[idx, 'response'] = response.message.content  # Update the dataframe with the response
-                print(response.message.content)
-            except Exception as e:
-                print(f"Error processing row {idx}: {e}")
-                continue
-
-            # Save the dataframe every `save_interval` calls
-            if idx % save_interval == 0 and idx > 0:
-                df.to_csv(output_file, index=True)
-                print(f"Saved progress at row {idx}.")
-
-    # Final save after completing all rows
-    df.to_csv(output_file, index=False)
-    print("Final dataframe saved.")
 
 def save_string_to_folder(folder_name: str, file_name: str, file_content: str):
     """
@@ -182,7 +93,7 @@ def replace_slash_dots_with_underscore(string_with_slash):
 
     return clean_string
 
-def run_prompt_from_yaml(yaml_file: str, dataframe: pd.DataFrame, save_interval: int = 50):
+def run_prompt_from_yaml(yaml_file: str, dataframe: pd.DataFrame, folder: str, save_interval: int = 50):
     """
     Reads a YAML file containing prompts and models, and runs each prompt for every model.
 
@@ -205,24 +116,17 @@ def run_prompt_from_yaml(yaml_file: str, dataframe: pd.DataFrame, save_interval:
         # Prepare a DataFrame for prompts
         for prompt_name, prompt in prompts.items():
             print(prompt_name)
-            save_string_to_folder("results/"+prompt_name, prompt_name + ".txt",prompt)
-            output_file = f"results/{prompt_name}/output_{replace_slash_dots_with_underscore(model)}.csv"
+            save_string_to_folder(f"{folder}/{prompt_name}", f"{prompt_name}.txt",prompt)
+            output_file = f"{folder}/{prompt_name}/output_{model_name}.csv"
             # Call the query function
             query_ollama_and_update(
-                df=dataframe,
+                df=dataframe.copy(),
                 output_file=output_file,
                 model=model,
                 prompt_template=prompt,
                 save_interval=save_interval
             )
 
-
-def run_prompt_from_yaml1(yaml_file):
-
-
-    save_string_to_folder("results/"+prompt_name, prompt_name + ".txt",prompt)
-    output_file = f"results/{prompt_name}/output_{replace_slash_dots_with_underscore(model)}.csv"
-    
 
 number = 3
 
@@ -245,6 +149,6 @@ print("Let's start!!")
 header = {"Content-Type": "application/json"}
 # Run the async function
 # print(dataframe.tail(20))
-run_prompt_from_yaml("prompt_settings.yaml",dataframe)
+run_prompt_from_yaml("prompt_settings.yaml",dataframe,"blah")
 # query_ollama_and_update(dataframe, output_file,model= model,prompt_template = prompt,save_interval=10)
 print("Finished.")
