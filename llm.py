@@ -36,16 +36,15 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
             # Format the prompt using the provided template
             prompt = f"{prompt_template}\n{df.loc[idx, 'article']}"
             message = {'role': 'user', 'content': prompt}
-            print(message)
 
-            # try:
-            #     # Query Ollama
-            #     response: ChatResponse = chat(model=model, messages=[message])
-            #     print(f"Response: {response}")
-            #     df.loc[idx, response_column] = response.message.content  # Update the dataframe with the response
-            # except Exception as e:
-            #     print(f"Error processing row {idx}: {e}")
-            #     continue
+            try:
+                # Query Ollama
+                response: ChatResponse = chat(model=model, messages=[message])
+                print(f"Response: {response}")
+                df.loc[idx, response_column] = response.message.content  # Update the dataframe with the response
+            except Exception as e:
+                print(f"Error processing row {idx}: {e}")
+                continue
 
             # Save the dataframe every `save_interval` calls
             if idx % save_interval == 0 and idx > 0:
@@ -149,6 +148,6 @@ print("Let's start!!")
 header = {"Content-Type": "application/json"}
 # Run the async function
 # print(dataframe.tail(20))
-run_prompt_from_yaml("prompt_settings.yaml",dataframe,"blah")
+run_prompt_from_yaml("prompt_settings.yaml",dataframe,"updated_results",save_interval=30)
 # query_ollama_and_update(dataframe, output_file,model= model,prompt_template = prompt,save_interval=10)
-print("Finished.")
+print("Finished.") 
