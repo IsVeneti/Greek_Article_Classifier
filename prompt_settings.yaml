@@ -13,10 +13,9 @@ prompts:
   precentage_choice_prompt_1: Ποίο από αυτά τα είδη είναι το άρθρο; Αρθρο, Επιστολή, Κριτική, Συνέντευξη, Συνταγή ή Άλλο; Απάντησε ποιο πιστεύεις ότι είναι και ποιό είναι το ποσοστό ακρίβειας της επιλογής σου.
 
 models:
-  llama_8b: llama3_1
-  lamma_3b: llama3_2
+  llama_3_1_8b: llama3.1
+  llama_3_2_3b: llama3.2
   mistral_7b: mistral
   gemma2_7b: gemma2
   meltemi_instruct_7b: ilsp/meltemi-instruct
-  meltemi_7b: ymertzanis/meltemi7b
-  meltemi_instruct_7b_v1.5: ilsp/meltemi-instruct-v1.5
+  meltemi_instruct_7b_v1_5: ilsp/meltemi-instruct-v1.5
