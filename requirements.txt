@@ -1,0 +1,4 @@
+newspaper==0.1.0.7
+ollama==0.4.6
+pandas==2.2.3
+PyYAML==6.0.2
