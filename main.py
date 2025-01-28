@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 from article_data_processing import create_dataframe
 from llm import run_prompt_from_yaml, run_prompt_from_yaml_cc
@@ -19,6 +20,14 @@ args = parser.parse_args()
 
 dataframe = create_dataframe(DATA_FOLDER)
 save_var = 'new_results'
+logname = "logs.log"
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename=logname,
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    level=logging.INFO)
 
 if args.save:
     save_var = args.save

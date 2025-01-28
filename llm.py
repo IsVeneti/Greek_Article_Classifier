@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from ollama import chat
@@ -8,7 +9,7 @@ from ollama import Client, ChatResponse
 import yaml
 
 from article_data_processing import create_dataframe
-
+logger = logging.getLogger(__name__)
 
 def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prompt_template: str = "Prompt", save_interval: int = 50):
     """
@@ -23,7 +24,7 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
     """
     # Define the model-specific response column
     response_column = model
-    print(model)
+    logger.info(model)
 
     if response_column not in df.columns:
         df[response_column] = None
@@ -38,20 +39,21 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
             try:
                 # Query Ollama
                 response: ChatResponse = chat(model=model, messages=[message])
-                print(f"Response: {response}")
+                logger.info(f"Response: {response}")
                 df.loc[idx, response_column] = response.message.content  # Update the dataframe with the response
             except Exception as e:
-                print(f"Error processing row {idx}: {e}")
+                logger.info(f"Error processing row {idx}: {e}")
+                logger.error("Error processing row {idx}: {e}")
                 continue
 
             # Save the dataframe every `save_interval` calls
             if idx % save_interval == 0 and idx > 0:
                 df.to_csv(output_file, index=False, sep='|')
-                print(f"Saved progress at row {idx}.")
+                logger.info(f"Saved progress at row {idx}.")
 
     # Final save after completing all rows
     df.to_csv(output_file, index=False,sep='|')
-    print("Final dataframe saved.")
+    logger.info("Final dataframe saved.")
 
 def query_custom_client_and_update(df: pd.DataFrame, output_file: str, model: str, host_ip: str, headers: dict = None, prompt_template: str = "Prompt", save_interval: int = 50):
     """
@@ -71,7 +73,7 @@ def query_custom_client_and_update(df: pd.DataFrame, output_file: str, model: st
 
     # Define the model-specific response column
     response_column = model
-    print(f"Using model: {model} on host: {host_ip}")
+    logger.info(f"Using model: {model} on host: {host_ip}")
 
     if response_column not in df.columns:
         df[response_column] = None
@@ -86,20 +88,20 @@ def query_custom_client_and_update(df: pd.DataFrame, output_file: str, model: st
             try:
                 # Query Ollama using the client
                 response = client.chat(model=model, messages=[message])
-                print(f"Response: {response}")
+                logger.info(f"Response: {response}")
                 df.loc[idx, response_column] = response["message"]["content"]  # Update the dataframe with the response
             except Exception as e:
-                print(f"Error processing row {idx}: {e}")
+                logger.error(f"Error processing row {idx}: {e}")
                 continue
 
             # Save the dataframe every `save_interval` calls
             if idx % save_interval == 0 and idx > 0:
                 df.to_csv(output_file, index=False, sep='|')
-                print(f"Saved progress at row {idx}.")
+                logger.info(f"Saved progress at row {idx}.")
 
     # Final save after completing all rows
     df.to_csv(output_file, index=False, sep='|')
-    print("Final dataframe saved.")
+    logger.info("Final dataframe saved.")
 
 
 
@@ -127,9 +129,9 @@ def save_string_to_folder(folder_name: str, file_name: str, file_content: str):
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.write(file_content)
 
-            print(f"File '{file_name}' successfully created in folder '{folder_name}'.")
+            logger.info(f"File '{file_name}' successfully created in folder '{folder_name}'.")
     except OSError as e:
-        print(f"Error creating folder or file: {e}")
+        logger.error(f"Error creating folder or file: {e}")
         raise
 
 
@@ -157,11 +159,11 @@ def run_prompt_from_yaml(yaml_file: str, dataframe: pd.DataFrame, folder: str, s
 
     # Iterate over each model
     for model_name, model in models.items():
-        print(f"Processing model: {model_name} ({model})")
+        logger.info(f"Processing model: {model_name} ({model})")
 
         # Prepare a DataFrame for prompts
         for prompt_name, prompt in prompts.items():
-            print(prompt_name)
+            # print(prompt_name)
             save_string_to_folder(f"{folder}/{prompt_name}", f"{prompt_name}.txt",prompt)
             output_file = f"{folder}/{prompt_name}/output_{model_name}.csv"
             # Call the query function
@@ -192,11 +194,11 @@ def run_prompt_from_yaml_cc(yaml_file: str, dataframe: pd.DataFrame, folder: str
 
     # Iterate over each model
     for model_name, model in models.items():
-        print(f"Processing model: {model_name} ({model})")
+        logger.info(f"Processing model: {model_name} ({model})")
 
         # Prepare a DataFrame for prompts
         for prompt_name, prompt in prompts.items():
-            print(prompt_name)
+            # logger.info(prompt_name)
             save_string_to_folder(f"{folder}/{prompt_name}", f"{prompt_name}.txt",prompt)
             output_file = f"{folder}/{prompt_name}/output_{model_name}.csv"
             # Call the query function
