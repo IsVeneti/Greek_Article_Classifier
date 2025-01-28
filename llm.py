@@ -39,7 +39,6 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
             try:
                 # Query Ollama
                 response: ChatResponse = chat(model=model, messages=[message])
-                logger.info(f"Response: {response}")
                 df.loc[idx, response_column] = response.message.content  # Update the dataframe with the response
             except Exception as e:
                 logger.info(f"Error processing row %s: %s",idx,e)
@@ -88,7 +87,6 @@ def query_custom_client_and_update(df: pd.DataFrame, output_file: str, model: st
             try:
                 # Query Ollama using the client
                 response = client.chat(model=model, messages=[message])
-                logger.info(f"Response: {response}")
                 df.loc[idx, response_column] = response["message"]["content"]  # Update the dataframe with the response
             except Exception as e:
                 logger.error(f"Error processing row %s: %s",idx,e)
