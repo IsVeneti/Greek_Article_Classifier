@@ -42,14 +42,14 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
                 logger.info(f"Response: {response}")
                 df.loc[idx, response_column] = response.message.content  # Update the dataframe with the response
             except Exception as e:
-                logger.info(f"Error processing row {idx}: {e}")
-                logger.error("Error processing row {idx}: {e}")
+                logger.info(f"Error processing row %s: %s",idx,e)
+                logger.error("Error processing row %s: %s",idx,e)
                 continue
 
             # Save the dataframe every `save_interval` calls
             if idx % save_interval == 0 and idx > 0:
                 df.to_csv(output_file, index=False, sep='|')
-                logger.info(f"Saved progress at row {idx}.")
+                logger.info(f"Saved progress at row %s.",idx)
 
     # Final save after completing all rows
     df.to_csv(output_file, index=False,sep='|')
@@ -91,13 +91,13 @@ def query_custom_client_and_update(df: pd.DataFrame, output_file: str, model: st
                 logger.info(f"Response: {response}")
                 df.loc[idx, response_column] = response["message"]["content"]  # Update the dataframe with the response
             except Exception as e:
-                logger.error(f"Error processing row {idx}: {e}")
+                logger.error(f"Error processing row %s: %s",idx,e)
                 continue
 
             # Save the dataframe every `save_interval` calls
             if idx % save_interval == 0 and idx > 0:
                 df.to_csv(output_file, index=False, sep='|')
-                logger.info(f"Saved progress at row {idx}.")
+                logger.info(f"Saved progress at row %s.",idx)
 
     # Final save after completing all rows
     df.to_csv(output_file, index=False, sep='|')
@@ -131,7 +131,7 @@ def save_string_to_folder(folder_name: str, file_name: str, file_content: str):
 
             logger.info(f"File '{file_name}' successfully created in folder '{folder_name}'.")
     except OSError as e:
-        logger.error(f"Error creating folder or file: {e}")
+        logger.error("Error creating folder or file: %s",e)
         raise
 
 
