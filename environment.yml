@@ -1,6 +1,6 @@
 name: conda_env
 dependencies:
-  newspaper4k: 0.9.3.1
-  ollama: 0.4.6
-  pandas: 2.2.3
-  PyYAML: 6.0.2
+  newspaper4k=0.9.3.1
+  ollama=0.4.6
+  pandas=2.2.3
+  PyYAML=6.0.2
