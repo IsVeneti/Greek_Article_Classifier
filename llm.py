@@ -11,7 +11,7 @@ import yaml
 from article_data_processing import create_dataframe
 logger = logging.getLogger(__name__)
 
-def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prompt_template: str = "Prompt", save_interval: int = 50):
+def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prompt_template: str, num_ctx: int = 4096, save_interval: int = 50):
     """
     Queries Ollama synchronously for each article in the dataframe and updates it with the response.
 
@@ -19,6 +19,7 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
         df (pd.DataFrame): The dataframe with 'title', 'article', and 'category'.
         output_file (str): The file path to save the updated dataframe as a CSV.
         model (str): The Ollama model to use for querying.
+        num_ctx (int): The token limit for the LLM
         prompt_template (str): The template for the prompt, where {article} is replaced with the article text.
         save_interval (int): The number of API calls after which to save the dataframe.
     """
@@ -38,7 +39,7 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
 
             try:
                 # Query Ollama
-                response: ChatResponse = chat(model=model, messages=[message],options={"num_ctx": 4096})
+                response: ChatResponse = chat(model=model, messages=[message],options={"num_ctx": num_ctx})
                 df.loc[idx, response_column] = response.message.content  # Update the dataframe with the response
             except Exception as e:
                 logger.info(f"Error processing row %s: %s",idx,e)
@@ -54,7 +55,7 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
     df.to_csv(output_file, index=False,sep='|')
     logger.info("Final dataframe saved.")
 
-def query_custom_client_and_update(df: pd.DataFrame, output_file: str, model: str, host_ip: str, headers: dict = None, prompt_template: str = "Prompt", save_interval: int = 50):
+def query_custom_client_and_update(df: pd.DataFrame, output_file: str, model: str, host_ip: str,  prompt_template: str, num_ctx: int = 4096, headers: dict = None, save_interval: int = 50):
     """
     Queries Ollama using a custom client for each article in the dataframe and updates it with the response.
 
@@ -63,8 +64,9 @@ def query_custom_client_and_update(df: pd.DataFrame, output_file: str, model: st
         output_file (str): The file path to save the updated dataframe as a CSV.
         model (str): The Ollama model to use for querying.
         host_ip (str): The custom host IP address.
-        headers (dict): Optional headers for the client.
         prompt_template (str): The template for the prompt, where {article} is replaced with the article text.
+        num_ctx (int): The token limit for the LLM
+        headers (dict): Optional headers for the client.
         save_interval (int): The number of API calls after which to save the dataframe.
     """
     # Initialize the Ollama client
@@ -86,7 +88,7 @@ def query_custom_client_and_update(df: pd.DataFrame, output_file: str, model: st
 
             try:
                 # Query Ollama using the client
-                response = client.chat(model=model, messages=[message],options={"num_ctx": 30000}),
+                response = client.chat(model=model, messages=[message],options={"num_ctx": num_ctx}),
                 df.loc[idx, response_column] = response["message"]["content"]  # Update the dataframe with the response
             except Exception as e:
                 logger.error(f"Error processing row %s: %s",idx,e)
@@ -139,13 +141,15 @@ def replace_slash_dots_with_underscore(string_with_slash):
 
     return clean_string
 
-def run_prompt_from_yaml(yaml_file: str, dataframe: pd.DataFrame, folder: str, save_interval: int = 50):
+def run_prompt_from_yaml(yaml_file: str, dataframe: pd.DataFrame, folder: str, num_ctx: int, save_interval: int = 50):
     """
     Reads a YAML file containing prompts and models, and runs each prompt for every model.
 
     Args:
         yaml_file (str): Path to the YAML file containing prompts and models.
         dataframe (pd.DataFrame): The dataframe with the data
+        folder (str): The name of the folder
+        num_ctx (int): The token limit for the LLM
         save_interval (int): The number of API calls after which to save the dataframe.
     """
     # Load the YAML file
@@ -170,10 +174,11 @@ def run_prompt_from_yaml(yaml_file: str, dataframe: pd.DataFrame, folder: str, s
                 output_file=output_file,
                 model=model,
                 prompt_template=prompt,
+                num_ctx=num_ctx
                 save_interval=save_interval
             )
 
-def run_prompt_from_yaml_cc(yaml_file: str, dataframe: pd.DataFrame, folder: str, host_ip: str ,save_interval: int = 50):
+def run_prompt_from_yaml_cc(yaml_file: str, dataframe: pd.DataFrame, num_ctx: int, folder: str, host_ip: str ,save_interval: int = 50):
     """
     Reads a YAML file containing prompts and models, and runs each prompt for every model in a custom client.
 
@@ -205,6 +210,7 @@ def run_prompt_from_yaml_cc(yaml_file: str, dataframe: pd.DataFrame, folder: str
                 output_file=output_file,
                 model=model,
                 prompt_template=prompt,
+                num_ctx=num_ctx
                 host_ip=host_ip,
                 save_interval=save_interval
             )

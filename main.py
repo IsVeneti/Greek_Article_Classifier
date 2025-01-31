@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("-cc","--custom_client",type=str, help="Uses a custom client. Needs IP of the host.")
 parser.add_argument("-l","--local",action="store_true", help="Uses a local ollama")
 parser.add_argument("-s","--save",type=str, help="Where to store the results")
+parser.add_argument("-ctx", "--num_ctx", type = int, help = "Custom number of tokens for ollama")
 parser.add_argument("-fl","--file_logs",type=str, help="Returns the logs to the filename specified instead of stdout")
 
 args = parser.parse_args()
@@ -22,7 +23,7 @@ args = parser.parse_args()
 dataframe = create_dataframe(DATA_FOLDER)
 save_var = 'new_results'
 logname = "logs.log"
-
+num_ctx = 4096
 
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,9 @@ else:
 
 if args.save:
     save_var = args.save
+
+if args.num_ctx:
+    num_ctx = args.num_ctx
 
 if args.custom_client:
     print(args.custom_client)
