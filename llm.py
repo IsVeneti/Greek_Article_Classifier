@@ -178,7 +178,7 @@ def run_prompt_from_yaml(yaml_file: str, dataframe: pd.DataFrame, folder: str, n
                 save_interval=save_interval
             )
 
-def run_prompt_from_yaml_cc(yaml_file: str, dataframe: pd.DataFrame, num_ctx: int, folder: str, host_ip: str ,save_interval: int = 50):
+def run_prompt_from_yaml_cc(yaml_file: str, dataframe: pd.DataFrame, folder: str, num_ctx: int, host_ip: str ,save_interval: int = 50):
     """
     Reads a YAML file containing prompts and models, and runs each prompt for every model in a custom client.
 

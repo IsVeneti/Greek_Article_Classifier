@@ -46,11 +46,11 @@ if args.num_ctx:
 
 if args.custom_client:
     print(args.custom_client)
-    run_prompt_from_yaml_cc("prompt_settings.yaml",dataframe,save_var,args.custom_client,save_interval=30)
+    run_prompt_from_yaml_cc("prompt_settings.yaml",dataframe,folder=save_var,num_ctx=num_ctx,host_ip=args.custom_client,save_interval=30)
 
 
 if args.local:
-    run_prompt_from_yaml("prompt_settings.yaml",dataframe,save_var,save_interval=10)
+    run_prompt_from_yaml("prompt_settings.yaml",dataframe,folder=save_var,num_ctx=num_ctx,save_interval=50)
 
 
 
