@@ -174,7 +174,7 @@ def run_prompt_from_yaml(yaml_file: str, dataframe: pd.DataFrame, folder: str, n
                 output_file=output_file,
                 model=model,
                 prompt_template=prompt,
-                num_ctx=num_ctx
+                num_ctx=num_ctx,
                 save_interval=save_interval
             )
 
@@ -210,7 +210,7 @@ def run_prompt_from_yaml_cc(yaml_file: str, dataframe: pd.DataFrame, folder: str
                 output_file=output_file,
                 model=model,
                 prompt_template=prompt,
-                num_ctx=num_ctx
+                num_ctx=num_ctx,
                 host_ip=host_ip,
                 save_interval=save_interval
             )
