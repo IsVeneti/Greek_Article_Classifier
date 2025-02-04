@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from pathlib import Path
@@ -6,6 +7,7 @@ from ollama import ChatResponse
 
 import pandas as pd
 from ollama import Client, ChatResponse
+import requests
 import yaml
 
 from article_data_processing import create_dataframe
@@ -35,6 +37,7 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
         if pd.isna(df.loc[idx, response_column]):  # Skip rows already processed
             # Format the prompt using the provided template
             prompt = f"{prompt_template}\n{df.loc[idx, 'article']}"
+            # logger.info(prompt)
             message = {'role': 'user', 'content': prompt}
 
             try:
@@ -55,51 +58,49 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
     df.to_csv(output_file, index=False,sep='|')
     logger.info("Final dataframe saved.")
 
-def query_custom_client_and_update(df: pd.DataFrame, output_file: str, model: str, host_ip: str,  prompt_template: str, num_ctx: int = 4096, headers: dict = None, save_interval: int = 50):
+
+def query_ollama_and_update_ip(df: pd.DataFrame, output_file: str, model: str, prompt_template: str, num_ctx: int = 4096, host_ip="http://10.100.54.95:11434/api/generate", save_interval: int = 50):
     """
-    Queries Ollama using a custom client for each article in the dataframe and updates it with the response.
+    Queries Ollama synchronously for each article in the dataframe and updates it with the response.
 
     Args:
         df (pd.DataFrame): The dataframe with 'title', 'article', and 'category'.
         output_file (str): The file path to save the updated dataframe as a CSV.
         model (str): The Ollama model to use for querying.
-        host_ip (str): The custom host IP address.
+        num_ctx (int): The token limit for the LLM.
         prompt_template (str): The template for the prompt, where {article} is replaced with the article text.
-        num_ctx (int): The token limit for the LLM
-        headers (dict): Optional headers for the client.
         save_interval (int): The number of API calls after which to save the dataframe.
     """
-    # Initialize the Ollama client
-    client = Client(host=host_ip, headers=headers or {})
-
-    # Define the model-specific response column
     response_column = model
-    logger.info(f"Using model: {model} on host: {host_ip}")
+    logger.info(f"Using model: {model}")
 
     if response_column not in df.columns:
         df[response_column] = None
 
-    # Iterate over rows in the dataframe
     for idx in range(len(df)):
         if pd.isna(df.loc[idx, response_column]):  # Skip rows already processed
-            # Format the prompt using the provided template
             prompt = f"{prompt_template}\n{df.loc[idx, 'article']}"
-            message = {'role': 'user', 'content': prompt}
-
+            payload = {
+                "model": model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {"num_ctx": num_ctx}
+            }
+            
             try:
-                # Query Ollama using the client
-                response = client.chat(model=model, messages=[message],options={"num_ctx": num_ctx}),
-                df.loc[idx, response_column] = response["message"]["content"]  # Update the dataframe with the response
+                response = requests.post(host_ip, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
+                if response.status_code == 200:
+                    df.loc[idx, response_column] = response.json().get("response", "")
+                else:
+                    logger.error(f"Error {response.status_code}: {response.text}")
             except Exception as e:
-                logger.error(f"Error processing row %s: %s",idx,e)
+                logger.error(f"Error processing row {idx}: {e}")
                 continue
 
-            # Save the dataframe every `save_interval` calls
             if idx % save_interval == 0 and idx > 0:
                 df.to_csv(output_file, index=False, sep='|')
-                logger.info(f"Saved progress at row %s.",idx)
+                logger.info(f"Saved progress at row {idx}.")
 
-    # Final save after completing all rows
     df.to_csv(output_file, index=False, sep='|')
     logger.info("Final dataframe saved.")
 
@@ -205,7 +206,7 @@ def run_prompt_from_yaml_cc(yaml_file: str, dataframe: pd.DataFrame, folder: str
             save_string_to_folder(f"{folder}/{prompt_name}", f"{prompt_name}.txt",prompt)
             output_file = f"{folder}/{prompt_name}/output_{model_name}.csv"
             # Call the query function
-            query_custom_client_and_update(
+            query_ollama_and_update_ip(
                 df=dataframe.copy(),
                 output_file=output_file,
                 model=model,
