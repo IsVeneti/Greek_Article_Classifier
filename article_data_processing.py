@@ -1,4 +1,5 @@
 import os
+import random
 import pandas as pd
 
 def create_dataframe(data_folder: str) -> pd.DataFrame:
@@ -25,6 +26,31 @@ def create_dataframe(data_folder: str) -> pd.DataFrame:
 
     return pd.DataFrame(data_rows)
 
+def create_dataframe_random(data_folder: str, num_rows: int) -> pd.DataFrame:
+    """
+    Creates a dataframe and selects a random subset of rows while ensuring a minimum row distance of 3.
+    
+    Args:
+        data_folder (str): Path to the folder containing subfolders of text files.
+        num_rows (int): The number of rows to select randomly.
+    
+    Returns:
+        pd.DataFrame: A dataframe containing the selected rows.
+    """
+    df = create_dataframe(data_folder)
+    if df.empty or num_rows <= 0:
+        return pd.DataFrame(columns=df.columns)
+    
+    available_indices = list(range(len(df)))
+    selected_indices = []
+    
+    while len(selected_indices) < num_rows and available_indices:
+        index = random.choice(available_indices)
+        selected_indices.append(index)
+        # Remove nearby indices to enforce minimum distance of 3
+        available_indices = [i for i in available_indices if abs(i - index) > 2]
+    
+    return df.iloc[selected_indices].reset_index(drop=True)
 
 def count_rows_by_name(df, name_column_index=2):
     """

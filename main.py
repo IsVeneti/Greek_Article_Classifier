@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from article_data_processing import create_dataframe
+from article_data_processing import create_dataframe, create_dataframe_random
 from llm import run_prompt_from_yaml, run_prompt_from_yaml_cc
 
 DATA_FOLDER = "data2"
@@ -17,14 +17,18 @@ parser.add_argument("-l","--local",action="store_true", help="Uses a local ollam
 parser.add_argument("-s","--save",type=str, help="Where to store the results")
 parser.add_argument("-ctx", "--num_ctx", type = int, help = "Custom number of tokens for ollama")
 parser.add_argument("-fl","--file_logs",type=str, help="Returns the logs to the filename specified instead of stdout")
+parser.add_argument("-rtd","--random_testing_dataframe",type=int, help="Returns the logs to the filename specified instead of stdout")
+
 
 args = parser.parse_args()
 
 dataframe = create_dataframe(DATA_FOLDER)
 save_var = 'new_results'
 logname = "logs.log"
-num_ctx = 4096
+num_ctx = 2048
 
+if(args.random_testing_dataframe):
+    dataframe = create_dataframe_random(DATA_FOLDER, num_rows=args.random_testing_dataframe)
 
 logger = logging.getLogger(__name__)
 if args.file_logs:
@@ -50,7 +54,7 @@ if args.custom_client:
 
 
 if args.local:
-    run_prompt_from_yaml("prompt_settings.yaml",dataframe,folder=save_var,num_ctx=num_ctx,save_interval=50)
+    run_prompt_from_yaml("prompt_settings.yaml",dataframe,folder=save_var,num_ctx=num_ctx,save_interval=5)
 
 
 
