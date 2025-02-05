@@ -136,7 +136,7 @@ def process_folder_recursive(folder_path):
 
 
 # print("precentage: ",process_csv('results/simple_prompt_1/output_llama3_1.csv'))
-process_folder_recursive('attempt_2/')
+# process_folder_recursive('attempt_2/')
 
 
 
