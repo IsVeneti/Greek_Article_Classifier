@@ -47,10 +47,9 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
             try:
                 # Query Ollama
                 response: ChatResponse = chat(model=model, messages=[message],options={"num_ctx": num_ctx}, format=Article_type.model_json_schema())
-                print(response.message.content)
                 article_type = Article_type.model_validate_json(response.message.content)
-                print(article_type)
-                df.loc[idx, response_column] = response.message.content  # Update the dataframe with the response
+                # Return the response inside the json
+                df.loc[idx, response_column] = article_type  # Update the dataframe with the response
             except Exception as e:
                 logger.info(f"Error processing row %s: %s",idx,e)
                 logger.error("Error processing row %s: %s",idx,e)
