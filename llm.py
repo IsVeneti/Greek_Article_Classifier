@@ -7,11 +7,15 @@ from ollama import ChatResponse
 
 import pandas as pd
 from ollama import Client, ChatResponse
+from pydantic import BaseModel
 import requests
 import yaml
 
 from article_data_processing import create_dataframe
 logger = logging.getLogger(__name__)
+
+class Article_type(BaseModel):
+  news_article_type: str
 
 def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prompt_template: str, num_ctx: int = 4096, save_interval: int = 50):
     """
@@ -42,7 +46,10 @@ def query_ollama_and_update(df: pd.DataFrame, output_file: str, model: str, prom
 
             try:
                 # Query Ollama
-                response: ChatResponse = chat(model=model, messages=[message],options={"num_ctx": num_ctx})
+                response: ChatResponse = chat(model=model, messages=[message],options={"num_ctx": num_ctx}, format=Article_type.model_json_schema())
+                print(response.message.content)
+                article_type = Article_type.model_validate_json(response.message.content)
+                print(article_type)
                 df.loc[idx, response_column] = response.message.content  # Update the dataframe with the response
             except Exception as e:
                 logger.info(f"Error processing row %s: %s",idx,e)
