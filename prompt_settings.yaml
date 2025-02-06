@@ -11,8 +11,8 @@ prompts:
 
 
 models:
-  # llama_3_1_8b: llama3.1
-  llama_3_2_3b: llama3.2
+  llama_3_1_8b: llama3.1
+  # llama_3_2_3b: llama3.2
   meltemi_instruct_7b: ilsp/meltemi-instruct
   meltemi_instruct_7b_v1_5: ilsp/meltemi-instruct-v1.5
   aya_8b: aya
