@@ -18,6 +18,7 @@ parser.add_argument("-s","--save",type=str, help="Where to store the results")
 parser.add_argument("-ctx", "--num_ctx", type = int, help = "Custom number of tokens for ollama")
 parser.add_argument("-fl","--file_logs",type=str, help="Returns the logs to the filename specified instead of stdout")
 parser.add_argument("-rtd","--random_testing_dataframe",type=int, help="Returns the logs to the filename specified instead of stdout")
+parser.add_argument("-si","--save_interval",type=int, help="Returns the logs to the filename specified instead of stdout")
 
 
 args = parser.parse_args()
@@ -26,6 +27,7 @@ dataframe = create_dataframe(DATA_FOLDER)
 save_var = 'new_results'
 logname = "logs.log"
 num_ctx = 2048
+save_interval = 50
 
 if(args.random_testing_dataframe):
     dataframe = create_dataframe_random(DATA_FOLDER, num_rows=args.random_testing_dataframe)
@@ -48,13 +50,16 @@ if args.save:
 if args.num_ctx:
     num_ctx = args.num_ctx
 
+if args.save_interval:
+    save_interval = args.save_interval
+
 if args.custom_client:
     print(args.custom_client)
-    run_prompt_from_yaml_cc("prompt_settings.yaml",dataframe,folder=save_var,num_ctx=num_ctx,host_ip=args.custom_client,save_interval=30)
+    run_prompt_from_yaml_cc("prompt_settings.yaml",dataframe,folder=save_var,num_ctx=num_ctx,host_ip=args.custom_client,save_interval=save_interval)
 
 
 if args.local:
-    run_prompt_from_yaml("prompt_settings.yaml",dataframe,folder=save_var,num_ctx=num_ctx,save_interval=5)
+    run_prompt_from_yaml("prompt_settings.yaml",dataframe,folder=save_var,num_ctx=num_ctx,save_interval=save_interval)
 
 
 
