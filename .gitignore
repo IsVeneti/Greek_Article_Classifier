@@ -3,6 +3,7 @@ results/
 new_results/
 updated_results/
 new_*/
+*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
