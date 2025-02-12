@@ -1,10 +1,10 @@
+import os
 import pandas as pd
 import json
 import numpy as np
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 from difflib import SequenceMatcher
 import unicodedata as ud
-from sklearn.preprocessing import LabelEncoder
 
 def compute_similarity(text1, text2):
         """Computes similarity ratio between two texts using SequenceMatcher."""
@@ -30,7 +30,7 @@ def update_pred_with_similarity(label_list, pred_list, threshold=0.8):
 
     return updated_pred_list
 
-def evaluate_model(df, similarity_threshold=0.8, output_file="llm_evaluation_results.csv"):
+def evaluate_model(df, similarity_threshold=0.8, average = "weighted", output_file="llm_evaluation_results.csv"):
     """
     Evaluates the performance of an LLM's classification using similarity-based comparison.
     
@@ -45,18 +45,13 @@ def evaluate_model(df, similarity_threshold=0.8, output_file="llm_evaluation_res
     # print(predicted_categories)
     llm_column_name = df.columns[3]  # Automatically detect the LLM response column (4th column)
     llm_responses = df[llm_column_name].astype(str).to_list()
-    print(list(set(true_categories)))
+    # print(list(set(true_categories)))
     predicted_categories = update_pred_with_similarity(list(set(true_categories)),llm_responses,threshold=similarity_threshold)
-    print(predicted_categories)
-
-    # Compute similarity scores
-    # similarity_scores = [compute_similarity(true_cat_str, pred) for true_cat_str, pred in zip(true_categories, llm_responses)]
-    # Determine predictions based on similarity threshold
-    # predicted_categories = [true_cat_str if score >= similarity_threshold else "incorrect" for true_cat_str, score in zip(true_categories, similarity_scores)]
     # print(predicted_categories)
+
     # Calculate evaluation metrics
     accuracy = accuracy_score(true_categories, predicted_categories)
-    precision, recall, f1, _ = precision_recall_fscore_support(true_categories, predicted_categories, average="macro", zero_division=0)
+    precision, recall, f1, _ = precision_recall_fscore_support(true_categories, predicted_categories, average=average, zero_division=0)
     eval_loss = 1 - accuracy  # Loss defined as 1 - accuracy
     
     # Create results DataFrame
@@ -101,7 +96,8 @@ def clean_text(text):
 # Extract JSON data from the fourth column
 def json_get_value(json_string,typename="news_article_type"):
     if not json_string:
-        return json_string
+        print("here")
+        return ''
     try:
         parsed_data = json.loads(json_string)  # Convert JSON string to dictionary
         value = parsed_data[typename]  # Get the value associated with typename
@@ -109,20 +105,42 @@ def json_get_value(json_string,typename="news_article_type"):
     except ValueError:
         return False
         
-def read_csv_and_extract_json(csv_path):
+def llm_result_json_to_df(csv_path):
     # Read the CSV file
     df = pd.read_csv(csv_path,encoding='utf-8',delimiter='|')
     # Ensure the fourth column exists
+    df = df.replace({np.nan: None})
     if df.shape[1] < 4:
+        print(csv_path)
         raise ValueError("CSV does not have at least four columns.")
 
     df.iloc[:,3] = df.iloc[:, 3].apply(json_get_value)
     
     return df
 
-df = read_csv_and_extract_json("./output_llama_3_1_8b.csv")
 
 
+
+def evaluate_folder_recursive(folder_path, similarity_threshold=0.8, average = "weighted", eval_filename="llm_evaluation_results.csv"):
+    """
+    Recursively evaluate all result CSV files in a folder and its subfolders
+    using the evaluate_model function. Ignores non-CSV files.
+
+    Args:
+        folder_path (str): The path to the folder containing CSV files.
+    """
+
+    for root, _, files in os.walk(folder_path):
+        for file_name in files:
+            eval_path = os.path.join(root,eval_filename)
+            if os.path.exists(eval_path):
+                os.remove(eval_path)
+            if file_name.endswith("b.csv"):
+                file_path = os.path.join(root, file_name)
+                dataframe = llm_result_json_to_df(str(file_path))
+                evaluate_model(dataframe,similarity_threshold=similarity_threshold, average=average, output_file=str(eval_path))
+
+evaluate_folder_recursive("results_16k/",eval_filename="llm_evaluation_results_weighted.csv")
 # print(df)
 # df.to_csv("df.csv")
-evaluate_model(df)
+# evaluate_model(df)
