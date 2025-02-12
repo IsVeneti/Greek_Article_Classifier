@@ -2,41 +2,42 @@ import pandas as pd
 import torch
 import re
 import logging
+import unicodedata
 from sklearn.model_selection import train_test_split
 from datasets import Dataset
-from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
-from transformers import DataCollatorWithPadding
+from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments, DataCollatorWithPadding
 from torch.utils.data import DataLoader
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from nltk.corpus import stopwords
-from nltk.stem.snowball import SnowballStemmer
 from nltk.tokenize import word_tokenize
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Load Greek stopwords and stemmer
+# Load Greek stopwords and lemmatizer
 try:
     stop_words = set(stopwords.words('greek'))
-    stemmer = SnowballStemmer("greek")
 except Exception as e:
-    logging.error("Error loading Greek stopwords or stemmer: %s", e)
+    logging.error("Error loading Greek stopwords: %s", e)
     stop_words = set()
-    stemmer = None
 
-def preprocess_text(text, remove_punctuation=True, remove_stopwords=True, use_stemmer=False, use_lemmatizer=False):
-    """Preprocesses Greek text by removing punctuation, stopwords, and applying stemming or lemmatization."""
+def remove_accents(text):
+    """Removes Greek accents from characters."""
+    return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+
+def preprocess_text(text, remove_punctuation=True, remove_stopwords=True, remove_accents_flag=True):
+    """Preprocesses Greek text by removing punctuation, stopwords, and applying lemmatization."""
     try:
         text = text.lower()
+        if remove_accents_flag:
+            text = remove_accents(text)
         text = re.sub(r'\d+', '', text)  # Remove numbers
         if remove_punctuation:
             text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
         tokens = word_tokenize(text)
         if remove_stopwords:
             tokens = [word for word in tokens if word not in stop_words]
-        if use_stemmer and stemmer:
-            tokens = [stemmer.stem(word) for word in tokens]
         return " ".join(tokens)
     except Exception as e:
         logging.error("Error in text preprocessing: %s", e)
@@ -45,7 +46,7 @@ def preprocess_text(text, remove_punctuation=True, remove_stopwords=True, use_st
 def load_and_preprocess_data(filepath):
     """Loads a CSV file, preprocesses the text, and encodes the categories."""
     try:
-        df = pd.read_csv(filepath)
+        df = pd.read_csv(filepath, delimiter='|')
         df = df[['article', 'category']].copy()
         label_encoder = LabelEncoder()
         df['category'] = label_encoder.fit_transform(df['category'])
@@ -95,7 +96,6 @@ def train_and_evaluate_model(train_texts, train_labels, test_texts, test_labels,
             args=training_args,
             train_dataset=train_dataset,
             eval_dataset=test_dataset,
-            tokenizer=tokenizer,
             data_collator=data_collator,
             compute_metrics=compute_metrics,
         )
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     tokenizer = BertTokenizer.from_pretrained("nlpaueb/bert-base-greek-uncased-v1")
     
     logging.info("Loading and preprocessing data...")
-    df, label_encoder = load_and_preprocess_data("your_dataset.csv")
+    df, label_encoder = load_and_preprocess_data("data_csv_file.csv")
     if df is not None:
         train_texts, test_texts, train_labels, test_labels = train_test_split(
             df['article'].tolist(), df['category'].tolist(), test_size=0.3, random_state=42
