@@ -1,8 +1,6 @@
 #ignore results for now
-results/
-new_results/
-updated_results/
-new_*/
+*results*
+new*
 *.csv
 
 # Byte-compiled / optimized / DLL files
