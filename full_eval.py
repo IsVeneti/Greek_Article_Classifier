@@ -12,6 +12,24 @@ def compute_similarity(text1, text2):
         c_text2 = clean_text(text2)
         return SequenceMatcher(None, c_text1, c_text2).ratio()
 
+def update_pred_with_similarity(label_list, pred_list, threshold=0.8):
+    updated_pred_list = pred_list[:]  # Copy pred_list to avoid modifying the original list
+    
+    for i, pred in enumerate(pred_list):
+        best_match = None
+        best_ratio = 0
+
+        for label in label_list:
+            similarity = SequenceMatcher(None, label, pred).ratio()
+            if similarity > best_ratio and similarity >= threshold:
+                best_match = label
+                best_ratio = similarity
+        
+        if best_match:
+            updated_pred_list[i] = best_match  # Replace with the best match from label_list
+
+    return updated_pred_list
+
 def evaluate_model(df, similarity_threshold=0.8, output_file="llm_evaluation_results.csv"):
     """
     Evaluates the performance of an LLM's classification using similarity-based comparison.
@@ -23,14 +41,18 @@ def evaluate_model(df, similarity_threshold=0.8, output_file="llm_evaluation_res
     """
     df.iloc[:,3] = df.iloc[:, 3].apply(clean_text)
     df.iloc[:,2] = df.iloc[:, 2].apply(clean_text)
-    true_categories = df["category"].astype(str).tolist()
+    true_categories = df.iloc[:, 2].astype(str).tolist()
+    # print(predicted_categories)
     llm_column_name = df.columns[3]  # Automatically detect the LLM response column (4th column)
     llm_responses = df[llm_column_name].astype(str).to_list()
+    print(list(set(true_categories)))
+    predicted_categories = update_pred_with_similarity(list(set(true_categories)),llm_responses,threshold=similarity_threshold)
+    print(predicted_categories)
+
     # Compute similarity scores
-    similarity_scores = [compute_similarity(true_cat_str, pred) for true_cat_str, pred in zip(true_categories, llm_responses)]
+    # similarity_scores = [compute_similarity(true_cat_str, pred) for true_cat_str, pred in zip(true_categories, llm_responses)]
     # Determine predictions based on similarity threshold
-    p_cat = []
-    predicted_categories = [true_cat_str if score >= similarity_threshold else "incorrect" for true_cat_str, score in zip(true_categories, similarity_scores)]
+    # predicted_categories = [true_cat_str if score >= similarity_threshold else "incorrect" for true_cat_str, score in zip(true_categories, similarity_scores)]
     # print(predicted_categories)
     # Calculate evaluation metrics
     accuracy = accuracy_score(true_categories, predicted_categories)
