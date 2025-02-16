@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+import re
 import pandas as pd
 import json
 import numpy as np
@@ -60,9 +62,11 @@ def evaluate_model(df, similarity_threshold=0.8, average = "weighted", output_fi
     
     # Append results to CSV file
     try:
+        print("FIle found")
         existing_results = pd.read_csv(output_file)
         evaluation_results = pd.concat([existing_results, evaluation_results], ignore_index=True)
     except FileNotFoundError:
+        print("FIle not found")
         pass
     
     evaluation_results.to_csv(output_file, index=False)
@@ -75,6 +79,9 @@ def clean_text(text):
     json_value = json_get_value(text,"news_article_type")
     if json_value:
         text = json_value
+    else:
+        text = str(text)
+        # print("TEXT STUFF: ",text)
 
     d = {ord('\N{COMBINING ACUTE ACCENT}'):None}
     removed_accents = ud.normalize('NFD',text.strip().lower()).translate(d)
@@ -94,16 +101,22 @@ def clean_text(text):
 
 
 # Extract JSON data from the fourth column
-def json_get_value(json_string,typename="news_article_type"):
+def json_get_value(json_string, typename="news_article_type"):
+    if not isinstance(json_string, str):  # Ensure it's a string
+        return str(json_string) if json_string is not None else ''
+    
+    json_string = re.sub(r"\s+", "", json_string)  # Remove spaces
     if not json_string:
-        print("here")
         return ''
+    
     try:
         parsed_data = json.loads(json_string)  # Convert JSON string to dictionary
-        value = parsed_data[typename]  # Get the value associated with typename
-        return value
-    except ValueError:
-        return False
+        if isinstance(parsed_data, dict):  # Ensure it's a dictionary
+            return parsed_data.get(typename, '')  # Get value or return empty string
+        return str(parsed_data)  # If it's not a dictionary, return as string
+    except json.JSONDecodeError:
+        return str(json_string)  # Return the original string if JSON parsing fails
+
         
 def llm_result_json_to_df(csv_path):
     # Read the CSV file
@@ -111,7 +124,6 @@ def llm_result_json_to_df(csv_path):
     # Ensure the fourth column exists
     df = df.replace({np.nan: None})
     if df.shape[1] < 4:
-        print(csv_path)
         raise ValueError("CSV does not have at least four columns.")
 
     df.iloc[:,3] = df.iloc[:, 3].apply(json_get_value)
@@ -130,17 +142,18 @@ def evaluate_folder_recursive(folder_path, similarity_threshold=0.8, average = "
         folder_path (str): The path to the folder containing CSV files.
     """
 
-    for root, _, files in os.walk(folder_path):
-        for file_name in files:
-            eval_path = os.path.join(root,eval_filename)
-            if os.path.exists(eval_path):
+    for root, _, files in os.walk(Path(folder_path)):
+        eval_path = os.path.join(root,eval_filename)
+        if os.path.exists(eval_path):
                 os.remove(eval_path)
-            if file_name.endswith("b.csv"):
+        for file_name in files:
+            if "output" in file_name and file_name.endswith(".csv"):
+                print("OI THE FILENAME IS: ", file_name)
                 file_path = os.path.join(root, file_name)
                 dataframe = llm_result_json_to_df(str(file_path))
                 evaluate_model(dataframe,similarity_threshold=similarity_threshold, average=average, output_file=str(eval_path))
 
-evaluate_folder_recursive("results_16k/",eval_filename="llm_evaluation_results_weighted.csv")
+evaluate_folder_recursive("results_13_02/results_32k",eval_filename="llm_evaluation_results_weighted.csv", average="weighted", similarity_threshold=0.8)
 # print(df)
 # df.to_csv("df.csv")
 # evaluate_model(df)
