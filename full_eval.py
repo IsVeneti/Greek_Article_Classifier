@@ -4,7 +4,7 @@ import re
 import pandas as pd
 import json
 import numpy as np
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+from sklearn.metrics import confusion_matrix, precision_recall_fscore_support, accuracy_score
 from difflib import SequenceMatcher
 import unicodedata as ud
 
@@ -32,24 +32,39 @@ def update_pred_with_similarity(label_list, pred_list, threshold=0.8):
 
     return updated_pred_list
 
-def evaluate_model(df, similarity_threshold=0.8, average = "weighted", output_file="llm_evaluation_results.csv"):
+def preprocess_labels(df):
+    """
+    Preprocesses the true and predicted category labels by cleaning text.
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing the true categories and LLM-generated responses.
+    
+    Returns:
+        tuple: (true_categories, predicted_categories, llm_column_name)
+    """
+    df.iloc[:, 3] = df.iloc[:, 3].apply(clean_text)
+    df.iloc[:, 2] = df.iloc[:, 2].apply(clean_text)
+
+    true_categories = df.iloc[:, 2].astype(str).tolist()
+    llm_column_name = df.columns[3]  # Automatically detect the LLM response column
+    llm_responses = df[llm_column_name].astype(str).tolist()
+
+    predicted_categories = update_pred_with_similarity(list(set(true_categories)), llm_responses)
+
+    return true_categories, predicted_categories, llm_column_name
+
+
+def evaluate_model(df, similarity_threshold=0.8, average="weighted", output_file="llm_evaluation_results.csv"):
     """
     Evaluates the performance of an LLM's classification using similarity-based comparison.
     
     Args:
         df (pd.DataFrame): DataFrame containing columns 'title', 'article', 'category', and LLM-generated responses.
-        similarity_threshold (float): Threshold for similarity score to determine correct classification. Default is 0.9.
-        output_file (str): Path to save the evaluation results CSV file. Default is 'evaluation_results.csv'.
+        similarity_threshold (float): Threshold for similarity score to determine correct classification.
+        average (str): Averaging method for precision, recall, and F1-score.
+        output_file (str): Path to save the evaluation results CSV file.
     """
-    df.iloc[:,3] = df.iloc[:, 3].apply(clean_text)
-    df.iloc[:,2] = df.iloc[:, 2].apply(clean_text)
-    true_categories = df.iloc[:, 2].astype(str).tolist()
-    # print(predicted_categories)
-    llm_column_name = df.columns[3]  # Automatically detect the LLM response column (4th column)
-    llm_responses = df[llm_column_name].astype(str).to_list()
-    # print(list(set(true_categories)))
-    predicted_categories = update_pred_with_similarity(list(set(true_categories)),llm_responses,threshold=similarity_threshold)
-    # print(predicted_categories)
+    true_categories, predicted_categories, llm_column_name = preprocess_labels(df)
 
     # Calculate evaluation metrics
     accuracy = accuracy_score(true_categories, predicted_categories)
@@ -62,15 +77,90 @@ def evaluate_model(df, similarity_threshold=0.8, average = "weighted", output_fi
     
     # Append results to CSV file
     try:
-        print("FIle found")
         existing_results = pd.read_csv(output_file)
         evaluation_results = pd.concat([existing_results, evaluation_results], ignore_index=True)
     except FileNotFoundError:
-        print("FIle not found")
         pass
-    
+
+    # Save the results
     evaluation_results.to_csv(output_file, index=False)
-    print(f"Evaluation results saved to {output_file}")
+
+
+def evaluate_model_with_confusion_matrix(df, similarity_threshold=0.8, average="weighted", output_file="llm_confusion_matrix_results.csv"):
+    """
+    Evaluates the performance of an LLM's classification using a confusion matrix.
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing columns 'title', 'article', 'category', and LLM-generated responses.
+        similarity_threshold (float): Threshold for similarity score to determine correct classification.
+        average (str): Averaging method for precision, recall, and F1-score.
+        output_file (str): Path to save the evaluation results CSV file.
+    
+    Returns:
+        None: Saves evaluation results to a CSV file.
+    """
+    true_categories, predicted_categories, llm_column_name = preprocess_labels(df)
+
+    # Compute confusion matrix
+    cm = confusion_matrix(true_categories, predicted_categories, labels=list(set(true_categories)))
+
+    # Calculate evaluation metrics
+    accuracy = accuracy_score(true_categories, predicted_categories)
+    precision, recall, f1, _ = precision_recall_fscore_support(true_categories, predicted_categories, average=average, zero_division=0)
+    eval_loss = 1 - accuracy  # Loss defined as 1 - accuracy
+
+    # Create results DataFrame
+    evaluation_results = pd.DataFrame([[llm_column_name, eval_loss, accuracy, precision, recall, f1, cm.tolist()]],
+                                      columns=["model", "eval_loss", "eval_accuracy", "eval_precision", "eval_recall", "eval_f1", "confusion_matrix"])
+
+    # Append results to CSV file
+    try:
+        existing_results = pd.read_csv(output_file)
+        evaluation_results = pd.concat([existing_results, evaluation_results], ignore_index=True)
+    except FileNotFoundError:
+        pass
+
+    # Save the results
+    evaluation_results.to_csv(output_file, index=False)
+
+def generate_confusion_matrix(df, similarity_threshold=0.8, output_file="llm_confusion_matrix_results.csv"):
+    """
+    Generates a confusion matrix for evaluating the performance of an LLM's classification.
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing columns 'title', 'article', 'category', and LLM-generated responses.
+        similarity_threshold (float): Threshold for similarity score to determine correct classification.
+        output_file (str): Path to save the confusion matrix results CSV file.
+    
+    Returns:
+        None: Saves the confusion matrix results to a CSV file.
+    """
+    true_categories, predicted_categories, llm_column_name = preprocess_labels(df)
+
+    # Compute confusion matrix
+    labels = list(set(true_categories))
+    cm = confusion_matrix(true_categories, predicted_categories, labels=labels)
+
+    # Convert confusion matrix to a DataFrame
+    cm_df = pd.DataFrame(cm, index=labels, columns=labels)
+    
+    # Save the confusion matrix to a CSV file
+    cm_output_file = output_file.replace(".csv", "_matrix.csv")
+    cm_df.to_csv(cm_output_file)
+
+    # Create summary DataFrame
+    evaluation_results = pd.DataFrame([[llm_column_name, cm_output_file]],
+                                      columns=["model", "confusion_matrix_file"])
+
+    # Append results to CSV file
+    try:
+        existing_results = pd.read_csv(output_file)
+        evaluation_results = pd.concat([existing_results, evaluation_results], ignore_index=True)
+    except FileNotFoundError:
+        pass
+
+    # Save the results
+    evaluation_results.to_csv(output_file, index=False)
 
 def clean_text(text):
     """
@@ -153,7 +243,10 @@ def evaluate_folder_recursive(folder_path, similarity_threshold=0.8, average = "
                 dataframe = llm_result_json_to_df(str(file_path))
                 evaluate_model(dataframe,similarity_threshold=similarity_threshold, average=average, output_file=str(eval_path))
 
-evaluate_folder_recursive("results_13_02/results_32k",eval_filename="llm_evaluation_results_weighted.csv", average="weighted", similarity_threshold=0.8)
+# evaluate_folder_recursive("results_13_02/results_32k",eval_filename="llm_evaluation_results_weighted.csv", average="weighted", similarity_threshold=0.8)
+
+generate_confusion_matrix(llm_result_json_to_df("./output_meltemi_instruct_7b_v1_5.csv"),output_file="meltemi1_5_copy_confusion_matrix_evaluation.csv")
+
 # print(df)
 # df.to_csv("df.csv")
 # evaluate_model(df)
