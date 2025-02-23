@@ -1,9 +1,10 @@
 #ignore results for now
-results/
-new_results/
-updated_results/
-new_*/
+*results*
+new*
 *.csv
+.vscode/
+finetun*
+saved_model/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

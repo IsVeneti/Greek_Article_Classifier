@@ -11,7 +11,7 @@ from pydantic import BaseModel
 import requests
 import yaml
 
-from article_data_processing import create_dataframe
+from src.data_processing.article_data_processing import create_dataframe
 logger = logging.getLogger(__name__)
 
 class Article_type(BaseModel):
