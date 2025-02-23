@@ -246,14 +246,17 @@ def evaluate_folder_recursive(folder_path, similarity_threshold=0.8, average = "
                 dataframe = llm_result_json_to_df(str(file_path))
                 evaluate_model(dataframe,similarity_threshold=similarity_threshold, average=average, output_file=str(eval_path))
 
-# evaluate_folder_recursive("results_13_02/results_32k",eval_filename="llm_evaluation_results_weighted.csv", average="weighted", similarity_threshold=0.8)
+if __name__ == "__main__":
+    results = "results_13_02/results_32k"
+    evaluate_folder_recursive(results,eval_filename="llm_evaluation_results_weighted.csv", average="weighted", similarity_threshold=0.8)
 
-# generate_confusion_matrix(llm_result_json_to_df("./output_meltemi_instruct_7b.csv"),output_file="./meltemi_copy_confusion_matrix_evaluation.csv")
-# generate_confusion_matrix(llm_result_json_to_df("./output_aya_8b.csv"),output_file="./aya_confusion_matrix_evaluation.csv")
-# generate_confusion_matrix(llm_result_json_to_df("./output_llama_3_1_8b.csv"),output_file="./llama_confusion_matrix_evaluation.csv")
-# generate_confusion_matrix(llm_result_json_to_df("./output_meltemi_instruct_7b_v1_5.csv"),output_file="./meltemi_7b_v1_5_copy_confusion_matrix_evaluation.csv")
+    # generate_confusion_matrix(llm_result_json_to_df("./output_meltemi_instruct_7b.csv"),output_file="./meltemi_copy_confusion_matrix_evaluation.csv")
+    # generate_confusion_matrix(llm_result_json_to_df("./output_aya_8b.csv"),output_file="./aya_confusion_matrix_evaluation.csv")
+    # generate_confusion_matrix(llm_result_json_to_df("./output_llama_3_1_8b.csv"),output_file="./llama_confusion_matrix_evaluation.csv")
+    # generate_confusion_matrix(llm_result_json_to_df("./output_meltemi_instruct_7b_v1_5.csv"),output_file="./meltemi_7b_v1_5_copy_confusion_matrix_evaluation.csv")
 
 
-# print(df)
-# df.to_csv("df.csv")
-# evaluate_model(df)
+    # print(df)
+    # df.to_csv("df.csv")
+    # evaluate_model(df)
+

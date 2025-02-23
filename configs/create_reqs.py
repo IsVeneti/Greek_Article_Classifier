@@ -33,11 +33,8 @@ def remove_duplicate_requirements():
         file.write("\n".join(unique_lines) + "\n")
     print("Duplicates removed from requirements.txt.")
 
-def main():
-    # Run pipreqs and remove duplicate entries.
-    run_pipreqs()
-    remove_duplicate_requirements()
 
 if __name__ == "__main__":
-    main()
+    run_pipreqs()
+    remove_duplicate_requirements()
 
