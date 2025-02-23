@@ -71,7 +71,7 @@ def count_rows_by_name(df, name_column_index=2):
 # # name_counts = count_rows_by_name(df)
 # # print(name_counts)
 # # Path to your data folder
-# data_folder = "data2"
+# data_folder = "../../data2"
 # output_file = "output.csv"
 # # Create the dataframe
 # dataframe = create_dataframe(data_folder)
