@@ -8,7 +8,7 @@ from datasets import Dataset
 from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments, DataCollatorWithPadding
 from torch.utils.data import DataLoader
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support,confusion_matrix
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
@@ -81,7 +81,7 @@ def train_and_evaluate_model(train_texts, train_labels, test_texts, test_labels,
         
         training_args = TrainingArguments(
             output_dir="./results",
-            evaluation_strategy="epoch",
+            eval_strategy="epoch",
             save_strategy="epoch",
             per_device_train_batch_size=8,
             per_device_eval_batch_size=8,
@@ -107,11 +107,26 @@ def train_and_evaluate_model(train_texts, train_labels, test_texts, test_labels,
         results = trainer.evaluate()
         pd.DataFrame(results, index=[0]).to_csv("evaluation_results.csv", index=False)
         
-        logging.info("Saving test predictions...")
+        logging.info("Saving test predictions and confusion matrix...")
         predictions = trainer.predict(test_dataset)
-        test_texts_df = pd.DataFrame({"article": test_texts, "actual": test_labels, "predicted": predictions.predictions.argmax(axis=1)})
+        preds = predictions.predictions.argmax(axis=1)
+
+        # Save test predictions
+        test_texts_df = pd.DataFrame({"article": test_texts, "actual": test_labels, "predicted": preds})
         test_texts_df.to_csv("test_predictions.csv", index=False)
-        
+
+        # Compute and save confusion matrix
+        conf_matrix = confusion_matrix(test_labels, preds)
+        conf_matrix_df = pd.DataFrame(conf_matrix, 
+                                      index=label_encoder.classes_, 
+                                      columns=label_encoder.classes_)
+        conf_matrix_df.to_csv("confusion_matrix.csv")
+
+        # Save the trained model and tokenizer
+        model.save_pretrained("./saved_model")
+        tokenizer.save_pretrained("./saved_model")
+        logging.info("Model, tokenizer, and evaluation files saved successfully.")
+
         return results
     except Exception as e:
         logging.error("Error during training and evaluation: %s", e)
