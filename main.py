@@ -10,16 +10,16 @@ from src.llms.ollama_connector import run_prompt_from_yaml, run_prompt_from_yaml
 
 parser = argparse.ArgumentParser(
                     prog='Greek_Article_Classifier',
-                    description='What the program does',
-                    epilog='Text at the bottom of help')
+                    description='This program runs llms in specific zero-shot prompts to classify news articles',
+                    epilog='Have fun!')
 
 parser.add_argument("-cc","--custom_client",type=str, help="Uses a custom client. Needs IP of the host.")
 parser.add_argument("-l","--local",action="store_true", help="Uses a local ollama")
 parser.add_argument("-s","--save",type=str, help="Where to store the results")
 parser.add_argument("-ctx", "--num_ctx", type = int, help = "Custom number of tokens for ollama")
 parser.add_argument("-fl","--file_logs",type=str, help="Returns the logs to the filename specified instead of stdout")
-parser.add_argument("-rtd","--random_testing_dataframe",type=int, help="Returns the logs to the filename specified instead of stdout")
-parser.add_argument("-si","--save_interval",type=int, help="Returns the logs to the filename specified instead of stdout")
+parser.add_argument("-rtd","--random_testing_dataframe",type=int, help="Test on a specific number of the dataset set by this parameter, randomized")
+parser.add_argument("-si","--save_interval",type=int, help="Saves into the csv on intervals set by this paramets")
 
 
 args = parser.parse_args()
