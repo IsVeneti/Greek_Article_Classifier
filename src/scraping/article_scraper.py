@@ -1,6 +1,7 @@
 import os
 import csv
 import re
+from configs.config import DATA_DIR
 from newspaper import Article
 from urllib.parse import quote_plus
 
@@ -95,4 +96,4 @@ def process_articles(data, parent_folder="data6", language='el'):
 #     csv_data = read_csv_to_object(csv_file_path)
 
 #     # Step 2: Process articles
-#     process_articles(csv_data,parent_folder="data2")
+    # process_articles(csv_data,parent_folder=DATA_FOLDER_PATH)

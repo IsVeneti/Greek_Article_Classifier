@@ -139,10 +139,13 @@ def generate_confusion_matrix(df, similarity_threshold=0.8, output_file="llm_con
 
     # Compute confusion matrix
     labels = list(set(true_categories))
-    cm = confusion_matrix(true_categories, predicted_categories, labels=labels)
+    print(labels)
+    labels1 = ["αρθρο","συνεντευξη","κριτικη","επιστολη","συνταγη","αλλο"]
+    print(labels1)
+    cm = confusion_matrix(true_categories,predicted_categories,labels=labels1)
 
     # Convert confusion matrix to a DataFrame
-    cm_df = pd.DataFrame(cm, index=labels, columns=labels)
+    cm_df = pd.DataFrame(cm, index=labels1, columns=labels1)
     
     # Save the confusion matrix to a CSV file
     cm_output_file = output_file.replace(".csv", "_matrix.csv")
@@ -245,7 +248,11 @@ def evaluate_folder_recursive(folder_path, similarity_threshold=0.8, average = "
 
 # evaluate_folder_recursive("results_13_02/results_32k",eval_filename="llm_evaluation_results_weighted.csv", average="weighted", similarity_threshold=0.8)
 
-generate_confusion_matrix(llm_result_json_to_df("./output_meltemi_instruct_7b_v1_5.csv"),output_file="meltemi1_5_copy_confusion_matrix_evaluation.csv")
+# generate_confusion_matrix(llm_result_json_to_df("./output_meltemi_instruct_7b.csv"),output_file="./meltemi_copy_confusion_matrix_evaluation.csv")
+# generate_confusion_matrix(llm_result_json_to_df("./output_aya_8b.csv"),output_file="./aya_confusion_matrix_evaluation.csv")
+# generate_confusion_matrix(llm_result_json_to_df("./output_llama_3_1_8b.csv"),output_file="./llama_confusion_matrix_evaluation.csv")
+# generate_confusion_matrix(llm_result_json_to_df("./output_meltemi_instruct_7b_v1_5.csv"),output_file="./meltemi_7b_v1_5_copy_confusion_matrix_evaluation.csv")
+
 
 # print(df)
 # df.to_csv("df.csv")

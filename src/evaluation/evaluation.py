@@ -4,7 +4,7 @@ import os
 import unicodedata as ud
 import re
 
-from tools import add_prefix_filename_from_path
+from utils.tools import add_prefix_filename_from_path
 
 def remove_prefix(text, prefix="Απαντηση:"):
     """
